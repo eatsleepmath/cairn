@@ -585,7 +585,7 @@ function Flow() {
             <Background 
               gap={16} 
               size={1} 
-              color={theme === 'dark' ? '#27272a' : '#e4e4e7'}
+              color={theme === 'dark' ? '#606060' : '#e4e4e7'}
             />
             <Controls 
               className={cn(
