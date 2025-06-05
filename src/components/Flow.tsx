@@ -1,7 +1,7 @@
+import { FlowHeader } from '@/components/FlowHeader';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
@@ -9,12 +9,12 @@ import { useTasks } from '@/contexts/TaskContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { cn } from '@/lib/utils';
 import {
-    findNodeById,
-    getAgentColor,
-    getAgentIcon,
-    getChildrenForNavigation,
-    taskToAgentHierarchy,
-    updateNavigationState
+  findNodeById,
+  getAgentColor,
+  getAgentIcon,
+  getChildrenForNavigation,
+  taskToAgentHierarchy,
+  updateNavigationState
 } from '@/lib/utils/agent-hierarchy';
 import '@/styles/flow.css';
 import { TaskStatus } from '@/types';
@@ -22,43 +22,37 @@ import { AgentNode, NavigationState } from '@/types/agent-hierarchy';
 import { format } from 'date-fns';
 import { motion } from 'framer-motion';
 import {
-    Activity,
-    ArrowLeft,
-    Bot,
-    CheckCircle2,
-    ChevronRight,
-    Clock,
-    GitBranch,
-    Home,
-    Loader2,
-    Maximize2,
-    RefreshCw,
-    Users,
-    ZoomIn
+  Activity,
+  Bot,
+  CheckCircle2,
+  Clock,
+  GitBranch,
+  Loader2,
+  Users,
+  ZoomIn
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import ReactFlow, {
-    addEdge,
-    Background,
-    BaseEdge,
-    Connection,
-    Controls,
-    Edge,
-    EdgeProps,
-    EdgeTypes,
-    getBezierPath,
-    Handle,
-    MarkerType,
-    MiniMap,
-    Node,
-    NodeProps,
-    NodeTypes,
-    Panel,
-    Position,
-    ReactFlowProvider,
-    useEdgesState,
-    useNodesState,
-    useReactFlow,
+  addEdge,
+  Background,
+  BaseEdge,
+  Connection,
+  Controls,
+  Edge,
+  EdgeProps,
+  EdgeTypes,
+  getBezierPath,
+  Handle,
+  MarkerType,
+  MiniMap,
+  Node,
+  NodeProps,
+  NodeTypes,
+  Position,
+  ReactFlowProvider,
+  useEdgesState,
+  useNodesState,
+  useReactFlow
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 
@@ -249,64 +243,7 @@ const AnimatedEdge: React.FC<EdgeProps> = ({
   );
 };
 
-// Breadcrumb navigation component
-const BreadcrumbNavigation: React.FC<{
-  navigation: NavigationState;
-  onNavigate: (level: number, parentId?: string) => void;
-  allNodes: AgentNode[];
-}> = ({ navigation, onNavigate, allNodes }) => {
-  return (
-    <Card className="p-3">
-      <div className="flex items-center gap-2 text-sm">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => onNavigate(1)}
-          className="h-7 px-2"
-        >
-          <Home className="w-3 h-3 mr-1" />
-          Tasks
-        </Button>
-        
-        {navigation.breadcrumbs.map((breadcrumb, index) => (
-          <div key={breadcrumb.id} className="flex items-center gap-2">
-            <ChevronRight className="w-3 h-3 text-muted-foreground" />
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => onNavigate(breadcrumb.level + 1, breadcrumb.id)}
-              className="h-7 px-2 max-w-[120px] truncate"
-            >
-              {breadcrumb.title}
-            </Button>
-          </div>
-        ))}
-        
-        {navigation.currentLevel > 1 && (
-          <div className="flex items-center gap-2 ml-auto">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                const newState = updateNavigationState(
-                  navigation,
-                  navigation.currentParentId || '',
-                  allNodes,
-                  'zoom-out'
-                );
-                onNavigate(newState.currentLevel, newState.currentParentId);
-              }}
-              className="h-7"
-            >
-              <ArrowLeft className="w-3 h-3 mr-1" />
-              Back
-            </Button>
-          </div>
-        )}
-      </div>
-    </Card>
-  );
-};
+
 
 // Flow component with hierarchical navigation
 function Flow() {
@@ -536,16 +473,7 @@ function Flow() {
     return stats;
   }, [allAgentNodes, navigation]);
 
-  // Get level name
-  const getLevelName = (level: number): string => {
-    switch (level) {
-      case 1: return 'Tasks';
-      case 2: return 'Subtasks';
-      case 3: return 'Engineering Tasks';
-      case 4: return 'Execution Traces';
-      default: return 'Unknown';
-    }
-  };
+
 
   if (isLoading) {
     return (
@@ -558,16 +486,20 @@ function Flow() {
   return (
     <>
       <div className="flow-container h-full relative">
-        {/* Breadcrumb Navigation */}
-        <div className="absolute top-4 left-4 right-4 z-20">
-          <BreadcrumbNavigation
-            navigation={navigation}
-            onNavigate={handleNavigate}
-            allNodes={allAgentNodes}
-          />
-        </div>
+        {/* Flow Header */}
+        <FlowHeader
+          navigation={navigation}
+          onNavigate={handleNavigate}
+          allNodes={allAgentNodes}
+          currentLevelStats={getCurrentLevelStats}
+          onRefresh={() => refreshTasks()}
+          onFitView={() => fitView({ duration: 800 })}
+          isLoading={isLoading}
+          autoRefreshEnabled={autoRefreshEnabled}
+          onToggleAutoRefresh={() => setAutoRefreshEnabled(!autoRefreshEnabled)}
+        />
 
-        <div className="absolute inset-0 pt-20">
+        <div className="absolute inset-0 pt-[72px]">
           <ReactFlow
             nodes={nodes}
             edges={edges}
@@ -607,85 +539,6 @@ function Flow() {
                        color.border.includes('orange') ? '#f97316' : '#6b7280';
               }}
             />
-            
-            {/* Level Stats Panel */}
-            <Panel position="top-left" className="flow-panel mt-20">
-              <motion.div
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.3 }}
-              >
-                <Card className="p-4 space-y-3 min-w-[200px]">
-                  <h3 className="font-semibold text-sm flex items-center gap-2">
-                    <Activity className="w-4 h-4" />
-                    {getLevelName(navigation.currentLevel)} (Level {navigation.currentLevel})
-                  </h3>
-                  <div className="space-y-2 text-xs">
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Total</span>
-                      <span className="font-medium">{getCurrentLevelStats.total}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-red-400">Todo</span>
-                      <span className="font-medium">{getCurrentLevelStats.todo}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-yellow-400">In Progress</span>
-                      <span className="font-medium">{getCurrentLevelStats.inProgress}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-blue-400">Testing</span>
-                      <span className="font-medium">{getCurrentLevelStats.testing}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-green-400">Completed</span>
-                      <span className="font-medium">{getCurrentLevelStats.completed}</span>
-                    </div>
-                  </div>
-                </Card>
-              </motion.div>
-            </Panel>
-
-            {/* Controls Panel */}
-            <Panel position="top-right" className="flow-panel mt-20">
-              <motion.div
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.3 }}
-                className="flex flex-col gap-2"
-              >
-                <div className="flex gap-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => refreshTasks()}
-                    disabled={isLoading}
-                    className="h-8"
-                  >
-                    <RefreshCw className={cn("w-4 h-4 mr-1", isLoading && "animate-spin")} />
-                    Refresh
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant={autoRefreshEnabled ? "default" : "outline"}
-                    onClick={() => setAutoRefreshEnabled(!autoRefreshEnabled)}
-                    className="h-8"
-                  >
-                    <Clock className={cn("w-4 h-4 mr-1", autoRefreshEnabled && "animate-pulse")} />
-                    Auto
-                  </Button>
-                </div>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => fitView({ duration: 800 })}
-                  className="h-8"
-                >
-                  <Maximize2 className="w-4 h-4 mr-1" />
-                  Fit View
-                </Button>
-              </motion.div>
-            </Panel>
           </ReactFlow>
         </div>
       </div>
