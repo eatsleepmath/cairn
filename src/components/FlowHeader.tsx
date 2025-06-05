@@ -1,6 +1,4 @@
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
 import { AgentNode, NavigationState } from '@/types/agent-hierarchy';
 import { motion } from 'framer-motion';
@@ -69,117 +67,138 @@ export const FlowHeader: React.FC<FlowHeaderProps> = ({
       transition={{ duration: 0.3 }}
       className="flow-header absolute top-0 left-0 right-0 z-20"
     >
-      <div className="header-section flex items-center justify-between px-6 py-4 gap-6">
-        {/* Left Section: Navigation */}
-        <div className="flex items-center gap-4 flex-1 min-w-0">
-          {/* Back Button */}
-          {navigation.currentLevel > 1 && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleBackNavigation}
-              className="shrink-0"
-            >
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back
-            </Button>
-          )}
+      <div className="backdrop-blur-md bg-background/80 border-b border-border/50">
+        <div className="flex items-center justify-between px-4 py-2.5 gap-4">
+          {/* Left Section: Navigation */}
+          <div className="flex items-center gap-3 flex-1 min-w-0">
+            {/* Back Button */}
+            {navigation.currentLevel > 1 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleBackNavigation}
+                className="h-7 px-2 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <ArrowLeft className="w-3.5 h-3.5 mr-1.5" />
+                Back
+              </Button>
+            )}
 
-          {/* Breadcrumb Navigation */}
-          <div className="breadcrumb-nav flex items-center gap-2 min-w-0 flex-1">
-            <Button
-              variant={navigation.currentLevel === 1 ? "default" : "ghost"}
-              size="sm"
-              onClick={() => onNavigate(1)}
-              className="shrink-0"
-            >
-              <Home className="w-4 h-4 mr-2" />
-              Tasks
-            </Button>
-            
-            {navigation.breadcrumbs.map((breadcrumb, index) => (
-              <div key={breadcrumb.id} className="flex items-center gap-2 min-w-0">
-                <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
-                <Button
-                  variant={index === navigation.breadcrumbs.length - 1 ? "default" : "ghost"}
-                  size="sm"
-                  onClick={() => onNavigate(breadcrumb.level + 1, breadcrumb.id)}
-                  className="min-w-0 max-w-[180px]"
-                  title={breadcrumb.title}
-                >
-                  <span className="truncate">{breadcrumb.title}</span>
-                </Button>
-              </div>
-            ))}
+            {/* Breadcrumb Navigation */}
+            <div className="flex items-center gap-1.5 min-w-0 flex-1">
+              <Button
+                variant={navigation.currentLevel === 1 ? "secondary" : "ghost"}
+                size="sm"
+                onClick={() => onNavigate(1)}
+                className={cn(
+                  "h-7 px-2.5 text-xs font-medium transition-all duration-200",
+                  navigation.currentLevel === 1 
+                    ? "bg-secondary/60 text-foreground shadow-none" 
+                    : "text-muted-foreground hover:text-foreground hover:bg-secondary/40"
+                )}
+              >
+                <Home className="w-3.5 h-3.5 mr-1.5" />
+                Tasks
+              </Button>
+              
+              {navigation.breadcrumbs.map((breadcrumb, index) => (
+                <div key={breadcrumb.id} className="flex items-center gap-1.5 min-w-0">
+                  <ChevronRight className="w-3 h-3 text-muted-foreground/50 shrink-0" />
+                  <Button
+                    variant={index === navigation.breadcrumbs.length - 1 ? "secondary" : "ghost"}
+                    size="sm"
+                    onClick={() => onNavigate(breadcrumb.level + 1, breadcrumb.id)}
+                    className={cn(
+                      "h-7 px-2.5 text-xs font-medium min-w-0 max-w-[160px] transition-all duration-200",
+                      index === navigation.breadcrumbs.length - 1
+                        ? "bg-secondary/60 text-foreground shadow-none"
+                        : "text-muted-foreground hover:text-foreground hover:bg-secondary/40"
+                    )}
+                    title={breadcrumb.title}
+                  >
+                    <span className="truncate">{breadcrumb.title}</span>
+                  </Button>
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
 
-        {/* Center Section: Level Stats */}
-        <Card className="stats-card px-4 py-2 shrink-0">
-          <div className="flex items-center gap-4">
+          {/* Center Section: Level Stats */}
+          <div className="flex items-center gap-3 px-3 py-1.5 rounded-md bg-secondary/30 border border-border/30">
             <div className="flex items-center gap-2">
-              <Activity className="w-4 h-4 text-primary" />
-              <span className="font-medium text-sm">
-                {getLevelName(navigation.currentLevel)} (L{navigation.currentLevel})
+              <Activity className="w-3.5 h-3.5 text-primary/80" />
+              <span className="text-xs font-medium text-foreground/90">
+                {getLevelName(navigation.currentLevel)}
+              </span>
+              <span className="text-[10px] text-muted-foreground/60 font-mono">
+                L{navigation.currentLevel}
               </span>
             </div>
             
-            <Separator orientation="vertical" className="h-4" />
+            <div className="w-px h-3 bg-border/40" />
             
-            <div className="flex items-center gap-4 text-xs">
+            <div className="flex items-center gap-2.5 text-[10px] font-mono">
               <div className="flex items-center gap-1">
-                <div className="w-2 h-2 rounded-full bg-muted-foreground" />
-                <span className="font-medium">{currentLevelStats.total}</span>
+                <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground/60" />
+                <span className="font-medium text-foreground/80">{currentLevelStats.total}</span>
               </div>
               <div className="flex items-center gap-1">
-                <div className="w-2 h-2 rounded-full bg-red-400" />
-                <span>{currentLevelStats.todo}</span>
+                <div className="w-1.5 h-1.5 rounded-full bg-red-400/70" />
+                <span className="text-muted-foreground/80">{currentLevelStats.todo}</span>
               </div>
               <div className="flex items-center gap-1">
-                <div className="w-2 h-2 rounded-full bg-yellow-400" />
-                <span>{currentLevelStats.inProgress}</span>
+                <div className="w-1.5 h-1.5 rounded-full bg-amber-400/70" />
+                <span className="text-muted-foreground/80">{currentLevelStats.inProgress}</span>
               </div>
               <div className="flex items-center gap-1">
-                <div className="w-2 h-2 rounded-full bg-blue-400" />
-                <span>{currentLevelStats.testing}</span>
+                <div className="w-1.5 h-1.5 rounded-full bg-blue-400/70" />
+                <span className="text-muted-foreground/80">{currentLevelStats.testing}</span>
               </div>
               <div className="flex items-center gap-1">
-                <div className="w-2 h-2 rounded-full bg-green-400" />
-                <span>{currentLevelStats.completed}</span>
+                <div className="w-1.5 h-1.5 rounded-full bg-emerald-400/70" />
+                <span className="text-muted-foreground/80">{currentLevelStats.completed}</span>
               </div>
             </div>
           </div>
-        </Card>
 
-        {/* Right Section: Controls */}
-        <div className="controls-section flex items-center gap-2 shrink-0">
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={onRefresh}
-            disabled={isLoading}
-          >
-            <RefreshCw className={cn("w-4 h-4 mr-2", isLoading && "animate-spin")} />
-            Refresh
-          </Button>
-          
-          <Button
-            size="sm"
-            variant={autoRefreshEnabled ? "default" : "outline"}
-            onClick={onToggleAutoRefresh}
-          >
-            <Clock className={cn("w-4 h-4 mr-2", autoRefreshEnabled && "animate-pulse")} />
-            Auto
-          </Button>
-          
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={onFitView}
-          >
-            <Maximize2 className="w-4 h-4 mr-2" />
-            Fit View
-          </Button>
+          {/* Right Section: Controls */}
+          <div className="flex items-center gap-1.5 shrink-0">
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={onRefresh}
+              disabled={isLoading}
+              className="h-7 px-2.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-all duration-200 hover:bg-secondary/40"
+            >
+              <RefreshCw className={cn("w-3.5 h-3.5 mr-1.5", isLoading && "animate-spin")} />
+              Refresh
+            </Button>
+            
+            <Button
+              size="sm"
+              variant={autoRefreshEnabled ? "secondary" : "ghost"}
+              onClick={onToggleAutoRefresh}
+              className={cn(
+                "h-7 px-2.5 text-xs font-medium transition-all duration-200",
+                autoRefreshEnabled 
+                  ? "bg-secondary/60 text-foreground shadow-none" 
+                  : "text-muted-foreground hover:text-foreground hover:bg-secondary/40"
+              )}
+            >
+              <Clock className={cn("w-3.5 h-3.5 mr-1.5", autoRefreshEnabled && "animate-pulse")} />
+              Auto
+            </Button>
+            
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={onFitView}
+              className="h-7 px-2.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-all duration-200 hover:bg-secondary/40"
+            >
+              <Maximize2 className="w-3.5 h-3.5 mr-1.5" />
+              Fit
+            </Button>
+          </div>
         </div>
       </div>
     </motion.div>

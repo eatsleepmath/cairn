@@ -105,12 +105,12 @@ const AgentTaskNode: React.FC<NodeProps> = ({ data, selected }) => {
       animate={{ scale: 1, opacity: 1 }}
       transition={{ duration: 0.3 }}
       className={cn(
-        "flow-node px-4 py-3 rounded-lg border-2 min-w-[220px] max-w-[320px] transition-all duration-300 cursor-pointer",
+        "flow-node px-3.5 py-2.5 rounded-lg border min-w-[200px] max-w-[300px] transition-all duration-300 cursor-pointer backdrop-blur-sm",
         agentColor.bg,
         agentColor.border,
-        isDark ? 'shadow-lg shadow-black/20' : 'shadow-md',
+        isDark ? 'shadow-lg shadow-black/10' : 'shadow-sm shadow-black/5',
         agentNode.isAnimating && 'animate-pulse',
-        selected && 'ring-2 ring-primary ring-offset-2 ring-offset-background'
+        selected && 'ring-1 ring-primary/60 ring-offset-1 ring-offset-background'
       )}
       whileHover={{ scale: 1.02 }}
       whileTap={{ scale: 0.98 }}
@@ -122,36 +122,38 @@ const AgentTaskNode: React.FC<NodeProps> = ({ data, selected }) => {
         className="!bg-blue-500 !w-2 !h-2 !border-2 !border-background opacity-0 hover:opacity-100 transition-opacity"
       />
       
-      <div className="space-y-2">
+      <div className="space-y-1.5">
         {/* Header with agent type and zoom indicator */}
         <div className="flex items-start justify-between gap-2">
           <div className="flex items-center gap-2 flex-1">
-            <span className="text-lg">{agentIcon}</span>
+            <span className="text-base opacity-80">{agentIcon}</span>
             <div className="flex-1">
-              <h3 className="font-medium text-sm line-clamp-2 text-foreground">{agentNode.title}</h3>
-              <div className="flex items-center gap-1 mt-1">
-                <Badge variant="outline" className={cn("text-[10px] px-1.5 py-0", agentColor.text)}>
+              <h3 className="font-medium text-xs line-clamp-2 text-foreground/90">{agentNode.title}</h3>
+              <div className="flex items-center gap-1.5 mt-1">
+                <Badge variant="outline" className={cn("text-[9px] px-1.5 py-0.5 border-border/40", agentColor.text)}>
                   {agentNode.agentType}
                 </Badge>
-                <span className="text-[10px] text-muted-foreground">Level {agentNode.level}</span>
+                <span className="text-[9px] text-muted-foreground/70 font-mono">L{agentNode.level}</span>
               </div>
             </div>
           </div>
           <div className="flex items-center gap-1">
-            {statusIcons[agentNode.status as TaskStatus]}
+            <div className="text-muted-foreground/60">
+              {statusIcons[agentNode.status as TaskStatus]}
+            </div>
             {canZoomIn && (
-              <ZoomIn className="w-3 h-3 text-muted-foreground" />
+              <ZoomIn className="w-3 h-3 text-muted-foreground/40" />
             )}
           </div>
         </div>
         
         {/* Status and priority */}
-        <div className="flex items-center gap-2 text-xs">
-          <Badge variant="outline" className={cn("text-[10px] px-1.5 py-0", statusColors[agentNode.status])}>
+        <div className="flex items-center gap-1.5 text-xs">
+          <Badge variant="outline" className={cn("text-[9px] px-1.5 py-0.5 border-border/40", statusColors[agentNode.status])}>
             {agentNode.status}
           </Badge>
           {agentNode.priority && (
-            <Badge variant="outline" className={cn("text-[10px] px-1.5 py-0", agentNode.priority && priorityColors[agentNode.priority as keyof typeof priorityColors])}>
+            <Badge variant="outline" className={cn("text-[9px] px-1.5 py-0.5 border-border/40", agentNode.priority && priorityColors[agentNode.priority as keyof typeof priorityColors])}>
               {agentNode.priority}
             </Badge>
           )}
@@ -159,24 +161,24 @@ const AgentTaskNode: React.FC<NodeProps> = ({ data, selected }) => {
 
         {/* Children count for navigation levels */}
         {hasChildren && agentNode.children && (
-          <div className="flex items-center gap-1 text-xs text-muted-foreground">
-            <GitBranch className="w-3 h-3" />
+          <div className="flex items-center gap-1 text-[10px] text-muted-foreground/70">
+            <GitBranch className="w-2.5 h-2.5" />
             <span>{agentNode.children.length} {agentNode.level === 1 ? 'subtasks' : agentNode.level === 2 ? 'engineering tasks' : 'traces'}</span>
           </div>
         )}
 
         {/* Assignees */}
         {agentNode.assignees && agentNode.assignees.length > 0 && (
-          <div className="flex items-center gap-1 text-xs text-muted-foreground">
-            <Users className="w-3 h-3" />
+          <div className="flex items-center gap-1 text-[10px] text-muted-foreground/70">
+            <Users className="w-2.5 h-2.5" />
             <span>{agentNode.assignees.length} assigned</span>
           </div>
         )}
 
         {/* Due date */}
         {agentNode.due_date && (
-          <div className="flex items-center gap-1 text-xs text-muted-foreground">
-            <Clock className="w-3 h-3" />
+          <div className="flex items-center gap-1 text-[10px] text-muted-foreground/70">
+            <Clock className="w-2.5 h-2.5" />
             <span>{format(new Date(agentNode.due_date), 'MMM d')}</span>
           </div>
         )}
@@ -184,8 +186,8 @@ const AgentTaskNode: React.FC<NodeProps> = ({ data, selected }) => {
         {/* Progress bar */}
         {agentNode.progress !== undefined && agentNode.progress > 0 && (
           <div className="relative">
-            <Progress value={agentNode.progress} className="h-1.5" />
-            <span className="absolute -top-5 right-0 text-[10px] text-muted-foreground">
+            <Progress value={agentNode.progress} className="h-1" />
+            <span className="absolute -top-4 right-0 text-[9px] text-muted-foreground/60 font-mono">
               {agentNode.progress}%
             </span>
           </div>
@@ -193,8 +195,8 @@ const AgentTaskNode: React.FC<NodeProps> = ({ data, selected }) => {
 
         {/* Trace steps count for level 4 */}
         {agentNode.level === 4 && agentNode.traceSteps && (
-          <div className="flex items-center gap-1 text-xs text-muted-foreground">
-            <Activity className="w-3 h-3" />
+          <div className="flex items-center gap-1 text-[10px] text-muted-foreground/70">
+            <Activity className="w-2.5 h-2.5" />
             <span>{agentNode.traceSteps.length} trace steps</span>
           </div>
         )}
@@ -499,7 +501,7 @@ function Flow() {
           onToggleAutoRefresh={() => setAutoRefreshEnabled(!autoRefreshEnabled)}
         />
 
-        <div className="absolute inset-0 pt-[72px]">
+        <div className="absolute inset-0 pt-[50px]">
           <ReactFlow
             nodes={nodes}
             edges={edges}
