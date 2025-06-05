@@ -12,6 +12,26 @@ import {
     RefreshCw
 } from 'lucide-react';
 
+// Cairn Logo Component
+const CairnLogo: React.FC<{ className?: string }> = ({ className }) => (
+  <svg 
+    viewBox="0 0 341 361" 
+    fill="none" 
+    xmlns="http://www.w3.org/2000/svg"
+    className={className}
+  >
+    <path 
+      d="M137 184C-94.8569 198.237 24.9999 296.833 121 337.5C242.6 387.9 306 346.333 328 313C351.333 260 365 170 137 184Z" 
+      fill="white"
+      opacity="0.7"
+    />
+    <path 
+      d="M172.762 5.26074C-57.6379 34.8607 -20 120.333 76 161C197.6 211.4 169.262 164.594 191.262 131.261C214.595 78.2607 403.162 -24.3393 172.762 5.26074Z" 
+      fill="#e5e7eb"
+    />
+  </svg>
+);
+
 interface FlowHeaderProps {
   navigation: NavigationState;
   onNavigate: (level: number, parentId?: string) => void;
@@ -71,18 +91,23 @@ export const FlowHeader: React.FC<FlowHeaderProps> = ({
         <div className="flex items-center justify-between px-4 py-2.5 gap-4">
           {/* Left Section: Navigation */}
           <div className="flex items-center gap-3 flex-1 min-w-0">
-            {/* Back Button */}
-            {navigation.currentLevel > 1 && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleBackNavigation}
-                className="h-7 px-2 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
-              >
-                <ArrowLeft className="w-3.5 h-3.5 mr-1.5" />
-                Back
-              </Button>
-            )}
+            {/* Cairn Logo - Permanent */}
+            <div className="flex items-center gap-3">
+              <CairnLogo className="w-5 h-5 shrink-0" />
+              
+              {/* Back Button */}
+              {navigation.currentLevel > 1 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleBackNavigation}
+                  className="h-7 px-2 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5 mr-1.5" />
+                  Back
+                </Button>
+              )}
+            </div>
 
             {/* Breadcrumb Navigation */}
             <div className="flex items-center gap-1.5 min-w-0 flex-1">
