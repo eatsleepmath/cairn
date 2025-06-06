@@ -1,3 +1,5 @@
+import { cairnApi } from "@/lib/api";
+import { transformCairnDataToHierarchy } from "@/lib/data-transform";
 import { Task } from "@/types";
 import React, { createContext, useCallback, useContext, useEffect, useReducer, useRef } from "react";
 
@@ -12,6 +14,9 @@ interface TaskContextType {
   refreshTasks: () => Promise<void>;
   autoRefreshEnabled: boolean;
   setAutoRefreshEnabled: (enabled: boolean) => void;
+  // Additional API data for debugging/monitoring
+  debugMessages: any[];
+  apiHealth: { status: string } | null;
 }
 
 type TaskState = {
@@ -19,6 +24,8 @@ type TaskState = {
   isLoading: boolean;
   error: Error | null;
   autoRefreshEnabled: boolean;
+  debugMessages: any[];
+  apiHealth: { status: string } | null;
 };
 
 type TaskAction =
@@ -29,7 +36,9 @@ type TaskAction =
   | { type: 'DELETE_TASK'; payload: string }
   | { type: 'SET_LOADING'; payload: boolean }
   | { type: 'SET_ERROR'; payload: Error | null }
-  | { type: 'SET_AUTO_REFRESH'; payload: boolean };
+  | { type: 'SET_AUTO_REFRESH'; payload: boolean }
+  | { type: 'SET_DEBUG_MESSAGES'; payload: any[] }
+  | { type: 'SET_API_HEALTH'; payload: { status: string } | null };
 
 const taskReducer = (state: TaskState, action: TaskAction): TaskState => {
   switch (action.type) {
@@ -66,131 +75,14 @@ const taskReducer = (state: TaskState, action: TaskAction): TaskState => {
       return { ...state, error: action.payload };
     case 'SET_AUTO_REFRESH':
       return { ...state, autoRefreshEnabled: action.payload };
+    case 'SET_DEBUG_MESSAGES':
+      return { ...state, debugMessages: action.payload };
+    case 'SET_API_HEALTH':
+      return { ...state, apiHealth: action.payload };
     default:
       return state;
   }
 };
-
-// Mock data for demonstration
-const mockTasks: Task[] = [
-  {
-    id: 'task-1',
-    title: 'Build User Authentication System',
-    description: 'Implement a comprehensive user authentication system with JWT tokens, password reset functionality, and OAuth integration.',
-    status: 'In Progress',
-    priority: 'High',
-    due_date: '2024-12-20',
-    created_at: '2024-12-01T10:00:00Z',
-    updated_at: '2024-12-05T14:30:00Z',
-    assignees: ['agent-fullstack', 'john.doe'],
-    created_by: 'john.doe',
-    team: 'frontend',
-    subtasks: [
-      {
-        id: 'subtask-1-1',
-        title: 'Design Authentication Flow',
-        description: 'Create wireframes and user flow for the authentication process',
-        status: 'Completed',
-        priority: 'High',
-        created_at: '2024-12-01T10:30:00Z',
-        updated_at: '2024-12-02T16:00:00Z',
-        assignees: ['pm-agent'],
-        created_by: 'john.doe',
-        team: 'frontend',
-        subtasks: [
-          {
-            id: 'engineering-1-1-1',
-            title: 'User Story Analysis',
-            description: 'Analyze user requirements and create detailed specifications',
-            status: 'Completed',
-            created_at: '2024-12-01T11:00:00Z',
-            updated_at: '2024-12-02T12:00:00Z',
-            assignees: ['swe-agent-1'],
-            created_by: 'pm-agent',
-            team: 'frontend',
-          }
-        ]
-      },
-      {
-        id: 'subtask-1-2',
-        title: 'Backend API Development',
-        description: 'Develop REST APIs for user registration, login, and token management',
-        status: 'Agent Working',
-        priority: 'High',
-        created_at: '2024-12-02T09:00:00Z',
-        updated_at: '2024-12-05T14:30:00Z',
-        assignees: ['swe-agent-2'],
-        created_by: 'john.doe',
-        team: 'frontend',
-      }
-    ]
-  },
-  {
-    id: 'task-2',
-    title: 'Implement Real-time Dashboard',
-    description: 'Create a real-time dashboard showing system metrics and user activity with WebSocket connections.',
-    status: 'Testing',
-    priority: 'Medium',
-    due_date: '2024-12-25',
-    created_at: '2024-11-28T09:00:00Z',
-    updated_at: '2024-12-04T11:00:00Z',
-    assignees: ['agent-fullstack', 'jane.smith'],
-    created_by: 'jane.smith',
-    team: 'frontend',
-    subtasks: [
-      {
-        id: 'subtask-2-1',
-        title: 'WebSocket Integration',
-        description: 'Set up WebSocket connection for real-time data updates',
-        status: 'Completed',
-        priority: 'High',
-        created_at: '2024-11-28T10:00:00Z',
-        updated_at: '2024-12-01T15:00:00Z',
-        assignees: ['swe-agent-3'],
-        created_by: 'jane.smith',
-        team: 'frontend',
-      },
-      {
-        id: 'subtask-2-2',
-        title: 'Dashboard UI Components',
-        description: 'Create reusable chart and metric components',
-        status: 'Testing',
-        priority: 'Medium',
-        created_at: '2024-11-29T14:00:00Z',
-        updated_at: '2024-12-04T11:00:00Z',
-        assignees: ['swe-agent-4'],
-        created_by: 'jane.smith',
-        team: 'frontend',
-      }
-    ]
-  },
-  {
-    id: 'task-3',
-    title: 'Database Optimization',
-    description: 'Optimize database queries and implement caching strategies to improve application performance.',
-    status: 'Todo',
-    priority: 'Medium',
-    due_date: '2025-01-15',
-    created_at: '2024-12-03T08:00:00Z',
-    updated_at: '2024-12-03T08:00:00Z',
-    assignees: ['backend-team'],
-    created_by: 'admin',
-    team: 'backend',
-  },
-  {
-    id: 'task-4',
-    title: 'Mobile App Development',
-    description: 'Develop a mobile companion app with offline capabilities and push notifications.',
-    status: 'Agent Done: Review',
-    priority: 'Low',
-    due_date: '2025-02-01',
-    created_at: '2024-11-15T12:00:00Z',
-    updated_at: '2024-12-01T09:00:00Z',
-    assignees: ['mobile-agent', 'alex.johnson'],
-    created_by: 'alex.johnson',
-    team: 'mobile',
-  }
-];
 
 const TaskContext = createContext<TaskContextType | undefined>(undefined);
 
@@ -200,46 +92,75 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
     isLoading: false,
     error: null,
     autoRefreshEnabled: false,
+    debugMessages: [],
+    apiHealth: null,
   };
 
   const [state, dispatch] = useReducer(taskReducer, initialState);
   const isInitialFetch = useRef(true);
   const lastRefreshTime = useRef<number>(0);
 
-  // Mock fetch function with simulated delay
+  // Real API fetch function
   const fetchTasks = useCallback(async (isManualRefresh: boolean = false) => {
     if (isManualRefresh || isInitialFetch.current) {
       dispatch({ type: 'SET_LOADING', payload: true });
     }
 
     try {
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 500));
+      console.log('Fetching data from Cairn API...');
       
+      // Fetch data from the real Cairn API
+      const dashboardData = await cairnApi.getDashboardData();
+      
+      console.log('API Response:', {
+        activeTasks: dashboardData.activeTasks.length,
+        taskLogs: dashboardData.taskLogs.length,
+        debugMessages: dashboardData.debugMessages.length,
+      });
+
+      // Transform the API data to our Task structure
+      const transformedTasks = transformCairnDataToHierarchy(
+        dashboardData.activeTasks,
+        dashboardData.taskLogs
+      );
+
+      console.log('Transformed tasks:', transformedTasks.length);
+
       if (isInitialFetch.current) {
-        dispatch({ type: 'SET_TASKS', payload: mockTasks });
+        dispatch({ type: 'SET_TASKS', payload: transformedTasks });
         isInitialFetch.current = false;
       } else {
-        // Simulate some status changes during auto-refresh
-        const updatedTasks = mockTasks.map(task => {
-          if (task.status === 'Agent Working' && Math.random() > 0.7) {
-            return { ...task, status: 'Agent Done: Review' as const, updated_at: new Date().toISOString() };
-          }
-          if (task.status === 'In Progress' && Math.random() > 0.8) {
-            return { ...task, status: 'Testing' as const, updated_at: new Date().toISOString() };
-          }
-          return task;
-        });
-        dispatch({ type: 'MERGE_TASKS', payload: updatedTasks });
+        dispatch({ type: 'MERGE_TASKS', payload: transformedTasks });
+      }
+
+      // Store debug messages and health info
+      dispatch({ type: 'SET_DEBUG_MESSAGES', payload: dashboardData.debugMessages });
+      
+      // Check API health
+      try {
+        const health = await cairnApi.getHealth();
+        dispatch({ type: 'SET_API_HEALTH', payload: health });
+      } catch (healthError) {
+        console.warn('Health check failed:', healthError);
+        dispatch({ type: 'SET_API_HEALTH', payload: null });
       }
 
       dispatch({ type: 'SET_ERROR', payload: null });
       lastRefreshTime.current = Date.now();
+      
+      console.log('Successfully updated tasks from Cairn API');
+      
     } catch (err) {
-      dispatch({
-        type: 'SET_ERROR',
-        payload: err instanceof Error ? err : new Error('Failed to fetch tasks')
-      });
+      console.error('Error fetching from Cairn API:', err);
+      
+      const error = err instanceof Error ? err : new Error('Failed to fetch tasks from Cairn API');
+      dispatch({ type: 'SET_ERROR', payload: error });
+      
+      // If this is the initial fetch and we get an error, set some fallback empty state
+      if (isInitialFetch.current) {
+        dispatch({ type: 'SET_TASKS', payload: [] });
+        isInitialFetch.current = false;
+      }
     } finally {
       if (isManualRefresh || isInitialFetch.current) {
         dispatch({ type: 'SET_LOADING', payload: false });
@@ -248,31 +169,42 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const refreshTasks = useCallback(async () => {
+    console.log('Manual refresh triggered');
     await fetchTasks(true);
   }, [fetchTasks]);
 
   const addTask = useCallback((task: Task) => {
+    // Note: For real implementation, you'd want to make an API call to create a new task
+    console.warn('addTask called but Cairn API doesn\'t have a create task endpoint yet');
     dispatch({ type: 'ADD_TASK', payload: task });
   }, []);
 
   const updateTask = useCallback((taskId: string, updates: Partial<Task>) => {
+    // Note: For real implementation, you'd want to make an API call to update the task
+    console.warn('updateTask called but Cairn API doesn\'t have an update task endpoint yet');
     dispatch({ type: 'UPDATE_TASK', payload: { id: taskId, updates } });
   }, []);
 
   const updateTaskStatus = useCallback((taskId: string, status: Task['status']) => {
+    // Note: For real implementation, you'd want to make an API call to update the task status
+    console.warn('updateTaskStatus called but Cairn API doesn\'t have an update status endpoint yet');
     dispatch({ type: 'UPDATE_TASK', payload: { id: taskId, updates: { status } } });
   }, []);
 
   const deleteTask = useCallback((taskId: string) => {
+    // Note: For real implementation, you'd want to make an API call to delete the task
+    console.warn('deleteTask called but Cairn API doesn\'t have a delete task endpoint yet');
     dispatch({ type: 'DELETE_TASK', payload: taskId });
   }, []);
 
   const setAutoRefreshEnabled = useCallback((enabled: boolean) => {
+    console.log('Auto-refresh', enabled ? 'enabled' : 'disabled');
     dispatch({ type: 'SET_AUTO_REFRESH', payload: enabled });
   }, []);
 
   // Initial fetch
   useEffect(() => {
+    console.log('TaskProvider: Initial fetch starting...');
     fetchTasks(true);
   }, [fetchTasks]);
 
@@ -280,14 +212,19 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     if (!state.autoRefreshEnabled) return;
 
+    console.log('Setting up auto-refresh interval');
     const intervalId = setInterval(() => {
       const now = Date.now();
-      if (now - lastRefreshTime.current >= 5000) {
+      if (now - lastRefreshTime.current >= 5000) { // 5 second throttle
+        console.log('Auto-refresh triggered');
         fetchTasks(false);
       }
-    }, 10000);
+    }, 10000); // Check every 10 seconds
 
-    return () => clearInterval(intervalId);
+    return () => {
+      console.log('Clearing auto-refresh interval');
+      clearInterval(intervalId);
+    };
   }, [state.autoRefreshEnabled, fetchTasks]);
 
   return (
@@ -303,6 +240,8 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
         refreshTasks,
         autoRefreshEnabled: state.autoRefreshEnabled,
         setAutoRefreshEnabled,
+        debugMessages: state.debugMessages,
+        apiHealth: state.apiHealth,
       }}
     >
       {children}

@@ -55,6 +55,10 @@ export interface Task {
   dueDate?: string;
   topic?: string;
   project?: string;
+  // Cairn API specific fields
+  run_ids?: string[];
+  agent_output?: Record<string, any>;
+  log_data?: any;
 }
 
 export interface User {
