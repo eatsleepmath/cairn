@@ -9,10 +9,14 @@ import { useTasks } from '@/contexts/TaskContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { cn } from '@/lib/utils';
 import {
+  calculateTreeLayout,
+  createTreeEdges,
   findNodeById,
+  flattenAgentHierarchy,
   getAgentColor,
   getAgentIcon,
   getChildrenForNavigation,
+  getTreeStats,
   taskToAgentHierarchy,
   updateNavigationState
 } from '@/lib/utils/agent-hierarchy';
@@ -61,7 +65,10 @@ const AgentTaskNode: React.FC<NodeProps> = ({ data, selected }) => {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
   
-  const agentNode = data as AgentNode & { onClick?: (nodeId: string) => void };
+  const agentNode = data as AgentNode & { 
+    onClick?: (nodeId: string) => void;
+    viewMode?: 'hierarchical' | 'tree';
+  };
   const agentColor = getAgentColor(agentNode.agentType);
   const agentIcon = getAgentIcon(agentNode.agentType);
   
@@ -97,7 +104,7 @@ const AgentTaskNode: React.FC<NodeProps> = ({ data, selected }) => {
   };
 
   const hasChildren = agentNode.children && agentNode.children.length > 0;
-  const canZoomIn = hasChildren || agentNode.level < 4;
+  const canZoomIn = agentNode.viewMode === 'hierarchical' && (hasChildren || agentNode.level < 4);
 
   return (
     <motion.div
@@ -245,8 +252,6 @@ const AnimatedEdge: React.FC<EdgeProps> = ({
   );
 };
 
-
-
 // Flow component with hierarchical navigation
 function Flow() {
   const { tasks, refreshTasks, isLoading, autoRefreshEnabled, setAutoRefreshEnabled } = useTasks();
@@ -268,6 +273,14 @@ function Flow() {
 
   // All agent nodes (complete hierarchy)
   const [allAgentNodes, setAllAgentNodes] = useState<AgentNode[]>([]);
+
+  // View mode for switching between hierarchical and tree views
+  const [viewMode, setViewMode] = useState<'hierarchical' | 'tree'>('hierarchical');
+
+  // Toggle between view modes
+  const handleToggleViewMode = useCallback(() => {
+    setViewMode(prev => prev === 'hierarchical' ? 'tree' : 'hierarchical');
+  }, []);
 
   // Update fitView ref when it changes
   useEffect(() => {
@@ -332,57 +345,92 @@ function Flow() {
 
   // Convert agent nodes to flow nodes and edges for current level
   useEffect(() => {
-    const currentLevelNodes = getChildrenForNavigation(
-      allAgentNodes,
-      navigation.currentParentId,
-      navigation.currentLevel
-    );
+    if (viewMode === 'tree') {
+      // Tree view: show all nodes in a flattened tree structure
+      const flattenedNodes = flattenAgentHierarchy(allAgentNodes);
+      
+      if (flattenedNodes.length === 0) {
+        setNodes([]);
+        setEdges([]);
+        return;
+      }
 
-    if (currentLevelNodes.length === 0) {
-      setNodes([]);
-      setEdges([]);
-      return;
-    }
+      const positions = calculateTreeLayout(flattenedNodes);
+      const flowNodes: Node[] = [];
+      const treeEdges = createTreeEdges(flattenedNodes);
 
-    const positions = calculateHierarchicalLayout(currentLevelNodes);
-    const flowNodes: Node[] = [];
-    const flowEdges: Edge[] = [];
+      flattenedNodes.forEach((agentNode) => {
+        const pos = positions.get(agentNode.id) || { x: 0, y: 0 };
 
-    currentLevelNodes.forEach((agentNode, index) => {
-      const pos = positions.get(agentNode.id) || { x: 0, y: 0 };
-
-      flowNodes.push({
-        id: agentNode.id,
-        type: 'agentTaskNode',
-        position: pos,
-        data: {
-          ...agentNode,
-          onClick: handleNodeClick,
-        },
+        flowNodes.push({
+          id: agentNode.id,
+          type: 'agentTaskNode',
+          position: pos,
+          data: {
+            ...agentNode,
+            onClick: handleNodeClick,
+            viewMode: viewMode,
+          },
+        });
       });
 
-      // Create edges between related nodes
-      if (index > 0 && navigation.currentLevel <= 3) {
-        const prevNode = currentLevelNodes[index - 1];
-        flowEdges.push({
-          id: `${prevNode.id}-${agentNode.id}`,
-          source: prevNode.id,
-          target: agentNode.id,
-          type: 'animated',
-          animated: agentNode.isAnimating,
-          style: { stroke: '#5e6ad2', strokeWidth: 2 },
-          markerEnd: {
-            type: MarkerType.ArrowClosed,
-            color: '#5e6ad2',
-          },
-          data: { isAnimating: agentNode.isAnimating },
-        });
-      }
-    });
+      setNodes(flowNodes);
+      setEdges(treeEdges);
+    } else {
+      // Hierarchical view: existing logic
+      const currentLevelNodes = getChildrenForNavigation(
+        allAgentNodes,
+        navigation.currentParentId,
+        navigation.currentLevel
+      );
 
-    setNodes(flowNodes);
-    setEdges(flowEdges);
-  }, [allAgentNodes, navigation, calculateHierarchicalLayout]);
+      if (currentLevelNodes.length === 0) {
+        setNodes([]);
+        setEdges([]);
+        return;
+      }
+
+      const positions = calculateHierarchicalLayout(currentLevelNodes);
+      const flowNodes: Node[] = [];
+      const flowEdges: Edge[] = [];
+
+      currentLevelNodes.forEach((agentNode, index) => {
+        const pos = positions.get(agentNode.id) || { x: 0, y: 0 };
+
+        flowNodes.push({
+          id: agentNode.id,
+          type: 'agentTaskNode',
+          position: pos,
+          data: {
+            ...agentNode,
+            onClick: handleNodeClick,
+            viewMode: viewMode,
+          },
+        });
+
+        // Create edges between related nodes
+        if (index > 0 && navigation.currentLevel <= 3) {
+          const prevNode = currentLevelNodes[index - 1];
+          flowEdges.push({
+            id: `${prevNode.id}-${agentNode.id}`,
+            source: prevNode.id,
+            target: agentNode.id,
+            type: 'animated',
+            animated: agentNode.isAnimating,
+            style: { stroke: '#5e6ad2', strokeWidth: 2 },
+            markerEnd: {
+              type: MarkerType.ArrowClosed,
+              color: '#5e6ad2',
+            },
+            data: { isAnimating: agentNode.isAnimating },
+          });
+        }
+      });
+
+      setNodes(flowNodes);
+      setEdges(flowEdges);
+    }
+  }, [allAgentNodes, navigation, calculateHierarchicalLayout, viewMode]);
 
   // Fit view when nodes change
   useEffect(() => {
@@ -401,25 +449,31 @@ function Flow() {
     const node = findNodeById(allAgentNodes, nodeId);
     if (!node) return;
 
-    // Check if node has children or can go deeper
-    const hasChildren = node.children && node.children.length > 0;
-    const canGoDeeper = node.level < 4;
-
-    if (hasChildren || canGoDeeper) {
-      // Navigate to next level
-      const newState = updateNavigationState(
-        navigation,
-        nodeId,
-        allAgentNodes,
-        'zoom-in'
-      );
-      setNavigation(newState);
-    } else {
-      // Show details in sidebar
+    if (viewMode === 'tree') {
+      // In tree mode, always show details since all levels are visible
       setSelectedAgentNode(node);
       setShowNodeDetails(true);
+    } else {
+      // In hierarchical mode, navigate or show details
+      const hasChildren = node.children && node.children.length > 0;
+      const canGoDeeper = node.level < 4;
+
+      if (hasChildren || canGoDeeper) {
+        // Navigate to next level
+        const newState = updateNavigationState(
+          navigation,
+          nodeId,
+          allAgentNodes,
+          'zoom-in'
+        );
+        setNavigation(newState);
+      } else {
+        // Show details in sidebar
+        setSelectedAgentNode(node);
+        setShowNodeDetails(true);
+      }
     }
-  }, [allAgentNodes, navigation]);
+  }, [allAgentNodes, navigation, viewMode]);
 
   // Handle navigation between levels
   const handleNavigate = useCallback((level: number, parentId?: string) => {
@@ -458,24 +512,29 @@ function Flow() {
 
   // Get current level statistics
   const getCurrentLevelStats = useMemo(() => {
-    const currentNodes = getChildrenForNavigation(
-      allAgentNodes,
-      navigation.currentParentId,
-      navigation.currentLevel
-    );
+    if (viewMode === 'tree') {
+      // Tree view: show stats for all nodes
+      const flattenedNodes = flattenAgentHierarchy(allAgentNodes);
+      return getTreeStats(flattenedNodes);
+    } else {
+      // Hierarchical view: show stats for current level
+      const currentNodes = getChildrenForNavigation(
+        allAgentNodes,
+        navigation.currentParentId,
+        navigation.currentLevel
+      );
 
-    const stats = {
-      total: currentNodes.length,
-      completed: currentNodes.filter(n => n.status === 'Completed' || n.status === 'Done').length,
-      inProgress: currentNodes.filter(n => n.status === 'In Progress' || n.status === 'Agent Working').length,
-      todo: currentNodes.filter(n => n.status === 'Todo').length,
-      testing: currentNodes.filter(n => n.status === 'Testing').length,
-    };
+      const stats = {
+        total: currentNodes.length,
+        completed: currentNodes.filter(n => n.status === 'Completed' || n.status === 'Done').length,
+        inProgress: currentNodes.filter(n => n.status === 'In Progress' || n.status === 'Agent Working').length,
+        todo: currentNodes.filter(n => n.status === 'Todo').length,
+        testing: currentNodes.filter(n => n.status === 'Testing').length,
+      };
 
-    return stats;
-  }, [allAgentNodes, navigation]);
-
-
+      return stats;
+    }
+  }, [allAgentNodes, navigation, viewMode]);
 
   if (isLoading) {
     return (
@@ -499,6 +558,8 @@ function Flow() {
           isLoading={isLoading}
           autoRefreshEnabled={autoRefreshEnabled}
           onToggleAutoRefresh={() => setAutoRefreshEnabled(!autoRefreshEnabled)}
+          viewMode={viewMode}
+          onToggleViewMode={handleToggleViewMode}
         />
 
         <div className="absolute inset-0 pt-[50px]">

@@ -9,7 +9,8 @@ import {
     Clock,
     Home,
     Maximize2,
-    RefreshCw
+    RefreshCw,
+    TreePine
 } from 'lucide-react';
 
 // Cairn Logo Component
@@ -48,6 +49,8 @@ interface FlowHeaderProps {
   isLoading: boolean;
   autoRefreshEnabled: boolean;
   onToggleAutoRefresh: () => void;
+  viewMode: 'hierarchical' | 'tree';
+  onToggleViewMode: () => void;
 }
 
 const getLevelName = (level: number): string => {
@@ -70,6 +73,8 @@ export const FlowHeader: React.FC<FlowHeaderProps> = ({
   isLoading,
   autoRefreshEnabled,
   onToggleAutoRefresh,
+  viewMode,
+  onToggleViewMode,
 }) => {
   const handleBackNavigation = () => {
     if (navigation.breadcrumbs.length > 0) {
@@ -95,8 +100,8 @@ export const FlowHeader: React.FC<FlowHeaderProps> = ({
             <div className="flex items-center gap-3">
               <CairnLogo className="w-5 h-5 shrink-0" />
               
-              {/* Back Button */}
-              {navigation.currentLevel > 1 && (
+              {/* Back Button - Only in hierarchical mode */}
+              {viewMode === 'hierarchical' && navigation.currentLevel > 1 && (
                 <Button
                   variant="ghost"
                   size="sm"
@@ -109,43 +114,54 @@ export const FlowHeader: React.FC<FlowHeaderProps> = ({
               )}
             </div>
 
-            {/* Breadcrumb Navigation */}
-            <div className="flex items-center gap-2.5 min-w-0 flex-1">
-              <Button
-                variant={navigation.currentLevel === 1 ? "secondary" : "ghost"}
-                size="sm"
-                onClick={() => onNavigate(1)}
-                className={cn(
-                  "h-7 px-2.5 text-xs font-medium transition-all duration-200",
-                  navigation.currentLevel === 1 
-                    ? "bg-secondary/60 text-foreground shadow-none" 
-                    : "text-muted-foreground hover:text-foreground hover:bg-secondary/40"
-                )}
-              >
-                <Home className="w-3.5 h-3.5 mr-1.5" />
-                Tasks
-              </Button>
-              
-              {navigation.breadcrumbs.map((breadcrumb, index) => (
-                <div key={breadcrumb.id} className="flex items-center gap-3 min-w-0">
-                  <ChevronRight className="w-3 h-3 text-muted-foreground/50 shrink-0" />
-                  <Button
-                    variant={index === navigation.breadcrumbs.length - 1 ? "secondary" : "ghost"}
-                    size="sm"
-                    onClick={() => onNavigate(breadcrumb.level + 1, breadcrumb.id)}
-                    className={cn(
-                      "h-7 px-2.5 text-xs font-medium min-w-0 max-w-[160px] transition-all duration-200",
-                      index === navigation.breadcrumbs.length - 1
-                        ? "bg-secondary/60 text-foreground shadow-none"
-                        : "text-muted-foreground hover:text-foreground hover:bg-secondary/40"
-                    )}
-                    title={breadcrumb.title}
-                  >
-                    <span className="truncate">{breadcrumb.title}</span>
-                  </Button>
-                </div>
-              ))}
-            </div>
+            {/* Breadcrumb Navigation - Hide in tree mode */}
+            {viewMode === 'hierarchical' && (
+              <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                <Button
+                  variant={navigation.currentLevel === 1 ? "secondary" : "ghost"}
+                  size="sm"
+                  onClick={() => onNavigate(1)}
+                  className={cn(
+                    "h-7 px-2.5 text-xs font-medium transition-all duration-200",
+                    navigation.currentLevel === 1 
+                      ? "bg-secondary/60 text-foreground shadow-none" 
+                      : "text-muted-foreground hover:text-foreground hover:bg-secondary/40"
+                  )}
+                >
+                  <Home className="w-3.5 h-3.5 mr-1.5" />
+                  Tasks
+                </Button>
+                
+                {navigation.breadcrumbs.map((breadcrumb, index) => (
+                  <div key={breadcrumb.id} className="flex items-center gap-3 min-w-0">
+                    <ChevronRight className="w-3 h-3 text-muted-foreground/50 shrink-0" />
+                    <Button
+                      variant={index === navigation.breadcrumbs.length - 1 ? "secondary" : "ghost"}
+                      size="sm"
+                      onClick={() => onNavigate(breadcrumb.level + 1, breadcrumb.id)}
+                      className={cn(
+                        "h-7 px-2.5 text-xs font-medium min-w-0 max-w-[160px] transition-all duration-200",
+                        index === navigation.breadcrumbs.length - 1
+                          ? "bg-secondary/60 text-foreground shadow-none"
+                          : "text-muted-foreground hover:text-foreground hover:bg-secondary/40"
+                      )}
+                      title={breadcrumb.title}
+                    >
+                      <span className="truncate">{breadcrumb.title}</span>
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Tree mode title */}
+            {viewMode === 'tree' && (
+              <div className="flex items-center gap-2 flex-1">
+                <span className="text-sm font-medium text-foreground/90">
+                  Complete Task Tree
+                </span>
+              </div>
+            )}
           </div>
 
           {/* Center Section: Level Stats */}
@@ -153,11 +169,13 @@ export const FlowHeader: React.FC<FlowHeaderProps> = ({
             <div className="flex items-center gap-2">
               <Activity className="w-3.5 h-3.5 text-primary/80" />
               <span className="text-xs font-medium text-foreground/90">
-                {getLevelName(navigation.currentLevel)}
+                {viewMode === 'tree' ? 'All Levels' : getLevelName(navigation.currentLevel)}
               </span>
-              <span className="text-[10px] text-muted-foreground/60 font-mono">
-                L{navigation.currentLevel}
-              </span>
+              {viewMode !== 'tree' && (
+                <span className="text-[10px] text-muted-foreground/60 font-mono">
+                  L{navigation.currentLevel}
+                </span>
+              )}
             </div>
             
             <div className="w-px h-3 bg-border/40" />
@@ -188,6 +206,26 @@ export const FlowHeader: React.FC<FlowHeaderProps> = ({
 
           {/* Right Section: Controls */}
           <div className="flex items-center gap-1.5 shrink-0">
+            <Button
+              size="sm"
+              variant={viewMode === 'tree' ? "secondary" : "ghost"}
+              onClick={onToggleViewMode}
+              className={cn(
+                "h-7 px-2.5 text-xs font-medium transition-all duration-200",
+                viewMode === 'tree'
+                  ? "bg-secondary/60 text-foreground shadow-none"
+                  : "text-muted-foreground hover:text-foreground hover:bg-secondary/40"
+              )}
+              title={`Switch to ${viewMode === 'tree' ? 'hierarchical' : 'tree'} view`}
+            >
+              {viewMode === 'tree' ? (
+                <TreePine className="w-3.5 h-3.5 mr-1.5" />
+              ) : (
+                <Activity className="w-3.5 h-3.5 mr-1.5" />
+              )}
+              {viewMode === 'tree' ? 'Tree' : 'Levels'}
+            </Button>
+            
             <Button
               size="sm"
               variant="ghost"

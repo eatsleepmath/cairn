@@ -314,4 +314,164 @@ export function getAgentColor(agentType: AgentType): {
         text: 'text-gray-400',
       };
   }
+}
+
+// Tree View Functions for Flattened Display
+
+// Flatten agent hierarchy into a single array for tree view
+export function flattenAgentHierarchy(nodes: AgentNode[]): AgentNode[] {
+  const flattened: AgentNode[] = [];
+  
+  function traverse(nodeList: AgentNode[]) {
+    nodeList.forEach(node => {
+      flattened.push(node);
+      if (node.children && node.children.length > 0) {
+        traverse(node.children);
+      }
+    });
+  }
+  
+  traverse(nodes);
+  return flattened;
+}
+
+// Calculate tree layout positions for all nodes
+export function calculateTreeLayout(nodes: AgentNode[]): Map<string, { x: number; y: number }> {
+  const positions = new Map<string, { x: number; y: number }>();
+  
+  // Group nodes by level
+  const nodesByLevel: Record<number, AgentNode[]> = {};
+  nodes.forEach(node => {
+    if (!nodesByLevel[node.level]) {
+      nodesByLevel[node.level] = [];
+    }
+    nodesByLevel[node.level].push(node);
+  });
+  
+  // Level spacing configuration
+  const levelSpacing = {
+    1: { x: 600, y: 200 }, // Horizontal spacing between top-level tasks
+    2: { x: 400, y: 150 }, // Subtasks
+    3: { x: 350, y: 120 }, // Engineering tasks
+    4: { x: 300, y: 100 }, // Trace steps
+  };
+  
+  let currentYOffset = 100;
+  
+  // Process each level
+  for (let level = 1; level <= 4; level++) {
+    const levelNodes = nodesByLevel[level] || [];
+    if (levelNodes.length === 0) continue;
+    
+    const spacing = levelSpacing[level as keyof typeof levelSpacing];
+    
+    // Group nodes by parent for better layout
+    const nodesByParent = new Map<string | undefined, AgentNode[]>();
+    levelNodes.forEach(node => {
+      const parentKey = node.parentId || 'root';
+      if (!nodesByParent.has(parentKey)) {
+        nodesByParent.set(parentKey, []);
+      }
+      nodesByParent.get(parentKey)!.push(node);
+    });
+    
+    // Position nodes
+    let currentXOffset = 100;
+    
+    nodesByParent.forEach((childNodes, parentKey) => {
+      // If there's a parent, try to center children under it
+      let parentX = currentXOffset;
+      if (parentKey !== 'root' && positions.has(parentKey)) {
+        parentX = positions.get(parentKey)!.x;
+      }
+      
+      // Calculate starting X position for this group
+      const groupWidth = (childNodes.length - 1) * spacing.x;
+      let startX = parentX - (groupWidth / 2);
+      
+      // Ensure we don't overlap with previous groups
+      if (startX < currentXOffset) {
+        startX = currentXOffset;
+      }
+      
+      childNodes.forEach((node, index) => {
+        const x = startX + (index * spacing.x);
+        const y = currentYOffset;
+        
+        positions.set(node.id, { x, y });
+        currentXOffset = Math.max(currentXOffset, x + spacing.x);
+      });
+    });
+    
+    currentYOffset += spacing.y;
+  }
+  
+  return positions;
+}
+
+// Get statistics for all nodes in tree view
+export function getTreeStats(nodes: AgentNode[]): {
+  total: number;
+  completed: number;
+  inProgress: number;
+  todo: number;
+  testing: number;
+} {
+  return {
+    total: nodes.length,
+    completed: nodes.filter(n => n.status === 'Completed' || n.status === 'Done').length,
+    inProgress: nodes.filter(n => n.status === 'In Progress' || n.status === 'Agent Working').length,
+    todo: nodes.filter(n => n.status === 'Todo').length,
+    testing: nodes.filter(n => n.status === 'Testing').length,
+  };
+}
+
+// Create edges for tree view connecting parents to children
+export function createTreeEdges(nodes: AgentNode[]): any[] {
+  const edges: any[] = [];
+  
+  nodes.forEach(node => {
+    if (node.parentId) {
+      // Find the parent node
+      const parent = nodes.find(n => n.id === node.parentId);
+      if (parent) {
+        edges.push({
+          id: `${node.parentId}-${node.id}`,
+          source: node.parentId,
+          target: node.id,
+          type: 'animated',
+          animated: node.isAnimating || false,
+          style: {
+            stroke: getEdgeColor(parent.level, node.level),
+            strokeWidth: getEdgeWidth(parent.level, node.level),
+          },
+          markerEnd: {
+            type: 'ArrowClosed',
+            color: getEdgeColor(parent.level, node.level),
+          },
+          data: { isAnimating: node.isAnimating || false },
+        });
+      }
+    }
+  });
+  
+  return edges;
+}
+
+// Helper function to get edge color based on levels
+function getEdgeColor(sourceLevel: number, targetLevel: number): string {
+  // Different colors for different level transitions
+  if (sourceLevel === 1 && targetLevel === 2) return '#8b5cf6'; // purple
+  if (sourceLevel === 2 && targetLevel === 3) return '#3b82f6'; // blue
+  if (sourceLevel === 3 && targetLevel === 4) return '#22c55e'; // green
+  return '#6b7280'; // gray default
+}
+
+// Helper function to get edge width based on levels
+function getEdgeWidth(sourceLevel: number, targetLevel: number): number {
+  // Thicker edges for higher-level connections
+  if (sourceLevel === 1) return 3;
+  if (sourceLevel === 2) return 2.5;
+  if (sourceLevel === 3) return 2;
+  return 1.5;
 } 
