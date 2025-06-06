@@ -90,7 +90,7 @@ export const FlowHeader: React.FC<FlowHeaderProps> = ({
       <div className="backdrop-blur-md bg-background/80 border-b border-border/50">
         <div className="flex items-center justify-between px-4 py-2.5 gap-4">
           {/* Left Section: Navigation */}
-          <div className="flex items-center gap-3 flex-1 min-w-0">
+          <div className="flex items-center gap-6 flex-1 min-w-0">
             {/* Cairn Logo - Permanent */}
             <div className="flex items-center gap-3">
               <CairnLogo className="w-5 h-5 shrink-0" />
@@ -110,7 +110,7 @@ export const FlowHeader: React.FC<FlowHeaderProps> = ({
             </div>
 
             {/* Breadcrumb Navigation */}
-            <div className="flex items-center gap-1.5 min-w-0 flex-1">
+            <div className="flex items-center gap-2.5 min-w-0 flex-1">
               <Button
                 variant={navigation.currentLevel === 1 ? "secondary" : "ghost"}
                 size="sm"
@@ -127,7 +127,7 @@ export const FlowHeader: React.FC<FlowHeaderProps> = ({
               </Button>
               
               {navigation.breadcrumbs.map((breadcrumb, index) => (
-                <div key={breadcrumb.id} className="flex items-center gap-1.5 min-w-0">
+                <div key={breadcrumb.id} className="flex items-center gap-3 min-w-0">
                   <ChevronRight className="w-3 h-3 text-muted-foreground/50 shrink-0" />
                   <Button
                     variant={index === navigation.breadcrumbs.length - 1 ? "secondary" : "ghost"}
